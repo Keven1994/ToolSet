@@ -43,6 +43,18 @@ namespace kevDev {
 		return std::disjunction<std::is_same<T, Ts>...>::value;
 	}
 
+	template<typename T>
+	static inline constexpr T getZero()
+	{
+		if constexpr (std::is_default_constructible<T>::value) {
+			return T{};
+		}
+		else {
+			constexpr char tmp[(sizeof(T))]{};
+			return reinterpret_cast<T>(tmp);
+		}
+	}
+
 	template<typename... Args>
 	struct Vector_Setting {
 		static inline constexpr bool useInitialized = contains<vector_settings::useInitialized, Args...>();
@@ -58,7 +70,6 @@ namespace kevDev {
 		static inline constexpr bool deepDelete = setting::deepDelete && std::is_pointer<T>::value && std::is_destructible<T>::value;
 		static inline constexpr bool useInitialized = setting::useInitialized;
 		static inline constexpr bool noSubscriptCheck = setting::noSubscriptCheck;
-
 		static inline constexpr bool isArray = std::is_array<T>::value;
 		static_assert(!isArray, "Arrays cannot be used in vector -> use Array instead of vector");
 
@@ -68,7 +79,8 @@ namespace kevDev {
 		using const_iterator = const T*;
 
 		vector(size_t startCapacity, size_t size) : mcapacity(startCapacity), msize(size) {
-			allocate(startCapacity);
+			if(startCapacity > 0)
+				allocate(startCapacity);
 		}
 
 	public:
@@ -114,10 +126,12 @@ namespace kevDev {
 		void operator-() = delete;
 
 		void reserve(size_t size) noexcept {
-			if (!mdata) {
-				allocate(size);
+			if (size > 0) {
+				if (!mdata) {
+					allocate(size);
+				}
+				else resize(size);
 			}
-			else resize(size);
 		}
 
 		[[nodiscard]] size_t size() const noexcept {
@@ -205,7 +219,7 @@ namespace kevDev {
 						throw std::out_of_range(std::string("subscription was out of bounds by: ") + (std::to_string(index - mcapacity + 1)));
 					}
 					else {
-						return mdata[0];
+						return reinterpret_cast<T&>(mdata);
 					}
 				}
 				else {

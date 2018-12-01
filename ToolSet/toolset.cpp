@@ -53,6 +53,7 @@ using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimiz
 
 
 int main() {
+
 	/*
 	measure([](){
 		std::vector<int> vec{};
@@ -98,10 +99,10 @@ int main() {
 		{
 			A A1{}, A2{}, A3{};
 
-			fv.push_back(A1);
-			fv.push_back(A2);
-			std::cout << fv[A2] << " found";
-			fv.push_back(A3);
+			//fv.push_back(A1);
+			//fv.push_back(A2);
+			//std::cout << fv[A2] << " found";
+			//fv.push_back(A3);
 			vector<A, setting> fv1(0);
 			fv1.push_back(A1);
 			fv1.push_back(A2);
@@ -114,7 +115,6 @@ int main() {
 		//std::cout << fv << std::endl;
 
 		try {
-			std::cout << fv << std::endl;
 			//auto test = fv[fv.capacity() + 1];
 		}
 		catch (std::exception& e) {

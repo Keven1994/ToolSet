@@ -13,10 +13,12 @@ size_t fptr(size_t size) {
 }
 
 class A {
-
+	int* df = new int(42);
 public:
 	~A() {
-		std::cout << "DTOR" << std::endl;
+		std::cout << "DTOR "<< *df << std::endl;
+		*df = 21;
+		delete df;
 	}
 	int x = 42;
 	bool operator==(const A& other) const {
@@ -51,22 +53,42 @@ void measure(void (*fptr) (void)) {
 }
 using mtest = typename kevDev::CalculateMaxCount<20000>::type;
 using namespace kevDev;
-using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::noSubscriptCheck, mtest>;
+using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized, mtest>;
+using setting2 = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::deepDelete, mtest>;
 
 
 static_assert(std::is_same_v<mtest,kevDev::vector_settings::maxCount::_16BIT>,"fail");
 
 int main() {
-		constexpr auto measuresize = 20000;
+	constexpr auto measuresize = 20000;
 
-		measure([]() {
-		vector<int, setting> vec(20000);
-		for (int i = 0; i < measuresize; i++) {
-			vec.push_back(std::rand());
-			for (int j = 0; j < measuresize; j++) {
-				vec[j++] += std::rand();
-			}
-		}});
+
+	{
+		int n1 = 0, n2 = 1;
+		int* ptr1 = new int(); int* ptr2 = new int();
+		vector<int,setting> v1{};
+		v1.push_back(n1);v1.push_back(n2);
+		vector<int*,setting> v2{};
+		v2.push_back(ptr1);v2.push_back(ptr2);
+	}
+		{
+		A n1{}, n2{};
+		A* ptr1 = new A(); A* ptr2 = new A();
+		vector<A,setting> v1{};
+		v1.push_back(std::move(n1));v1.push_back(std::move(n2));
+		vector<A,setting> v3{v1};
+		vector<A*,setting> v2{};
+		v2.push_back(ptr1);v2.push_back(ptr2);
+	}
+
+	measure([]() {
+	vector<int, setting> vec(20000);
+	for (int i = 0; i < measuresize; i++) {
+		vec.push_back(std::rand());
+		for (int j = 0; j < measuresize; j++) {
+			vec[j++] = std::rand();
+		}
+	}});
 
 
 	measure([](){
@@ -75,7 +97,7 @@ int main() {
 		for (int i = 0; i < measuresize; i++) {
 			vec.push_back(std::rand());
 			for (int j = 0; j < measuresize; j++) {
-				vec[j++] += std::rand();
+				vec[j++] = std::rand();
 			}
 		}
 	});
@@ -85,7 +107,7 @@ int main() {
 		for (int i = 0; i < measuresize; i++) {
 			arr[i] = std::rand();
 			for (int j = 0; j < measuresize; j++) {
-				arr[j++] += std::rand();
+				arr[j++] = std::rand();
 			}
 		}
 	});

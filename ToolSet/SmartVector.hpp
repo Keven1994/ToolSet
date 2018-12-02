@@ -40,6 +40,7 @@ namespace kevDev {
 			struct _64BIT{};
 		}
 		struct useInitialized {};
+		 //consider to use this only when you dont know your bounds @ compile time and you are safe to dont go out of bounds
 		struct noSubscriptCheck {};
 		struct deepDelete {};
 		struct optimized {};
@@ -109,7 +110,6 @@ namespace kevDev {
 			mcpy(list.begin(), mdata, msize);
 		}
 
-		//template<typename = std::enable_if_t<(!(deepDelete))>>
 		vector(const vector& other) : vector(other.mcapacity,other.msize) {
 			static_assert(!deepDelete,"do not copy while deepDelete is active!");
 			mcpy(other.mdata, mdata, msize);
@@ -119,7 +119,6 @@ namespace kevDev {
 			swap(other);
 		}
 
-		//template<typename = std::enable_if_t<(!(deepDelete && std::is_pointer<T>::value))>>
 		void operator=(const vector& other) {
 			static_assert(!deepDelete,"do not copy while deepDelete is active!");
 			vector tmp{ other };
@@ -144,12 +143,25 @@ namespace kevDev {
 		void operator-() = delete;
 
 		void reserve(size_c size) noexcept {
-			if (size > 0) {
+#if !(defined(DEBUG) || defined(_DEBUG))				
+			if constexpr(!optimized){
+#endif
+				if (size > 0) {
+					if (!mdata) {
+						allocate(size);
+					}
+					else resize(size);
+				}
+			#if !(defined(DEBUG) || defined(_DEBUG))
+			} else {
+
 				if (!mdata) {
 					allocate(size);
 				}
 				else resize(size);
+				
 			}
+			#endif
 		}
 
 		[[nodiscard]] size_c size() const noexcept {

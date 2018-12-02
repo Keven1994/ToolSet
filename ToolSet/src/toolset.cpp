@@ -1,6 +1,5 @@
 #define _CRTDBG_MAP_ALLOC  
 //#define DEBUG
-
 #include "../SmartVector.hpp"
 #include <iostream>
 #include <string>
@@ -14,7 +13,6 @@ size_t fptr(size_t size) {
 }
 
 class A {
-
 
 public:
 	~A() {
@@ -51,14 +49,26 @@ void measure(void (*fptr) (void)) {
 
 	std::cout << "time elapsed: " << time << std::endl;
 }
-
+using mtest = typename kevDev::CalculateMaxCount<20000>::type;
 using namespace kevDev;
-using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,kevDev::vector_settings::noSubscriptCheck, kevDev::vector_settings::maxCount::_32BIT>;
+using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::noSubscriptCheck, mtest>;
 
+
+static_assert(std::is_same_v<mtest,kevDev::vector_settings::maxCount::_16BIT>,"fail");
 
 int main() {
+		constexpr auto measuresize = 20000;
 
-	constexpr auto measuresize = 20000;
+		measure([]() {
+		vector<int, setting> vec(20000);
+		for (int i = 0; i < measuresize; i++) {
+			vec.push_back(std::rand());
+			for (int j = 0; j < measuresize; j++) {
+				vec[j++] += std::rand();
+			}
+		}});
+
+
 	measure([](){
 		std::vector<int> vec{};
 		vec.reserve(measuresize);
@@ -80,29 +90,8 @@ int main() {
 		}
 	});
 
-
-	measure([]() {
-		vector<int, setting> vec(measuresize);
-		for (int i = 0; i < measuresize; i++) {
-			vec.push_back(std::rand());
-			for (int j = 0; j < measuresize; j++) {
-				vec[j++] += std::rand();
-			}
-		}});
-
 	#ifdef _WIN32
 	_CrtDumpMemoryLeaks();
 	#endif
     std::cout << "Hello World!\n"; 
 }
-
-// Programm ausführen: STRG+F5 oder "Debuggen" > Menü "Ohne Debuggen starten"
-// Programm debuggen: F5 oder "Debuggen" > Menü "Debuggen starten"
-
-// Tipps für den Einstieg: 
-//   1. Verwenden Sie das Projektmappen-Explorer-Fenster zum Hinzufügen/Verwalten von Dateien.
-//   2. Verwenden Sie das Team Explorer-Fenster zum Herstellen einer Verbindung mit der Quellcodeverwaltung.
-//   3. Verwenden Sie das Ausgabefenster, um die Buildausgabe und andere Nachrichten anzuzeigen.
-//   4. Verwenden Sie das Fenster "Fehlerliste", um Fehler anzuzeigen.
-//   5. Wechseln Sie zu "Projekt" > "Neues Element hinzufügen", um neue Codedateien zu erstellen, bzw. zu "Projekt" > "Vorhandenes Element hinzufügen", um dem Projekt vorhandene Codedateien hinzuzufügen.
-//   6. Um dieses Projekt später erneut zu öffnen, wechseln Sie zu "Datei" > "Öffnen" > "Projekt", und wählen Sie die SLN-Datei aus.

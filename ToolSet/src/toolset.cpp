@@ -1,10 +1,13 @@
 #define _CRTDBG_MAP_ALLOC  
+//#define DEBUG
 
-#include "SmartVector.hpp"
+#include "../SmartVector.hpp"
 #include <iostream>
 #include <string>
 #include <vector>
 #include <chrono>
+
+size_t fptr(size_t size);
 
 size_t fptr(size_t size) {
 	return (size + 1) * 3;
@@ -15,7 +18,7 @@ class A {
 
 public:
 	~A() {
-		//std::cout << "DTOR" << std::endl;
+		std::cout << "DTOR" << std::endl;
 	}
 	int x = 42;
 	bool operator==(const A& other) const {
@@ -23,17 +26,18 @@ public:
 		return false;
 	}
 };
+std::ostream& operator<<(std::ostream& out, A c) ;
 std::ostream& operator<<(std::ostream& out, A c) {
 	return out << c.x << std::endl;
 }
-
+bool operator==(const A& rhs, A& lhs);
 bool operator==(const A& rhs, A& lhs) {
 	return rhs.operator==(lhs);
 }
 
 
 
-
+void measure(void (*fptr) (void)) ;
 
 void measure(void (*fptr) (void)) {
 	std::cout << "start time measurement" << std::endl;
@@ -49,80 +53,46 @@ void measure(void (*fptr) (void)) {
 }
 
 using namespace kevDev;
-using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized, kevDev::vector_settings::deepDelete>;
+using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,kevDev::vector_settings::noSubscriptCheck, kevDev::vector_settings::maxCount::_32BIT>;
 
 
 int main() {
 
-	/*
+	constexpr auto measuresize = 20000;
 	measure([](){
 		std::vector<int> vec{};
-		vec.reserve(10000);
-		for (int i = 0; i < 10000; i++) {
+		vec.reserve(measuresize);
+		for (int i = 0; i < measuresize; i++) {
 			vec.push_back(std::rand());
-			int j = 0;
-			for (auto& elem : vec) {
-				vec[j++] = std::rand();
+			for (int j = 0; j < measuresize; j++) {
+				vec[j++] += std::rand();
 			}
 		}
 	});
 
 	measure([]() {
-		int* arr = new int[10000];
-		for (int i = 0; i < 10000; i++) {
+		int* arr = new int[measuresize];
+		for (int i = 0; i < measuresize; i++) {
 			arr[i] = std::rand();
-			for (int j = 0; j < 10000; j++) {
-				arr[j++] = std::rand();
+			for (int j = 0; j < measuresize; j++) {
+				arr[j++] += std::rand();
 			}
 		}
 	});
 
 
 	measure([]() {
-		vector<int, setting> vec(10000);
-		for (int i = 0; i < 10000; i++) {
+		vector<int, setting> vec(measuresize);
+		for (int i = 0; i < measuresize; i++) {
 			vec.push_back(std::rand());
-			int j = 0;
-			for (auto& elem : vec) {
-				vec[j++] = std::rand();
+			for (int j = 0; j < measuresize; j++) {
+				vec[j++] += std::rand();
 			}
-		}});*/
+		}});
 
-	{
-
-		
-		//int* x1 = new int(6);
-		//int* x2 = new int(6);
-		//int* x3 = new int(6);
-		//int* x4 = new int(6);
-		vector<A, setting> fv(0);
-		{
-			A A1{}, A2{}, A3{};
-
-			//fv.push_back(A1);
-			//fv.push_back(A2);
-			//std::cout << fv[A2] << " found";
-			//fv.push_back(A3);
-			vector<A, setting> fv1(0);
-			fv1.push_back(A1);
-			fv1.push_back(A2);
-			fv1.push_back(A3);
-		}
-		
-
-		//fv.reserve(25);
-		//fv[14] = x4;
-		//std::cout << fv << std::endl;
-
-		try {
-			//auto test = fv[fv.capacity() + 1];
-		}
-		catch (std::exception& e) {
-			std::cerr << __FILE__ << " line: " << __LINE__ << std::endl << "	->" << e.what() << std::endl;
-		}
-		
-	}
+	#ifdef _WIN32
 	_CrtDumpMemoryLeaks();
+	#endif
     std::cout << "Hello World!\n"; 
 }
 

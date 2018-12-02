@@ -334,3 +334,9 @@ ToolSet\.sln
 *.filters
 
 *.vcxproj
+
+ToolSet/\.vscode/settings\.json
+
+*.o
+
+ToolSet/makefile

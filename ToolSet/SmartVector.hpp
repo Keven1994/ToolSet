@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <cstddef>
+#include <climits>
 #include <exception>
 #include "MemoryOps.h"
 #include <iostream>
@@ -17,25 +18,43 @@
 
 namespace kevDev {
 
-	inline constexpr size_t defaultResAcq(size_t size) {
+	template<typename size_c>
+	inline constexpr size_c defaultResAcq(size_c size) {
 		return (size + 1) * 2;
 	}
 
-	template<typename T>
-	inline constexpr T* defaultSearchAlgo(const T& elem, T* data, size_t size) {
-		//requires equality comparable type
-		for (size_t i = 0; i < size; i++) {
+	template<typename T,typename size_c>
+	inline constexpr T* defaultSearchAlgo(const T& elem, T* data, size_c size) {
+		//requires equality comparable type concept will follow when msvc implements concepts
+		for (size_c i = 0; i < size; i++) {
 			if (data[i] == elem) return data+i;
 		}
 		return nullptr;
 	}
 
 	namespace vector_settings{
+		namespace maxCount{
+			struct _8BIT{};
+			struct _16BIT{};
+			struct _32BIT{};
+			struct _64BIT{};
+		}
 		struct useInitialized {};
 		struct noSubscriptCheck {};
 		struct deepDelete {};
 		struct optimized {};
 	}
+
+	template<size_t x>
+	struct CalculateMaxCount {
+		using type = 
+		typename std::conditional<x <= UINT8_MAX, vector_settings::maxCount::_8BIT,
+			typename std::conditional<x <= UINT16_MAX, vector_settings::maxCount::_16BIT,
+				typename std::conditional<x <= UINT32_MAX, vector_settings::maxCount::_32BIT, vector_settings::maxCount::_64BIT
+				>::type
+			>::type
+		>::type;
+	};
 
 	template<typename T, typename... Ts>
 	constexpr bool contains()
@@ -43,58 +62,56 @@ namespace kevDev {
 		return std::disjunction<std::is_same<T, Ts>...>::value;
 	}
 
-	template<typename T>
-	static inline constexpr T getZero()
-	{
-		if constexpr (std::is_default_constructible<T>::value) {
-			return T{};
-		}
-		else {
-			constexpr char tmp[(sizeof(T))]{};
-			return reinterpret_cast<T>(tmp);
-		}
-	}
-
 	template<typename... Args>
 	struct Vector_Setting {
+		using size_c = typename std::conditional<contains<vector_settings::maxCount::_8BIT, Args...>(), uint8_t,
+		typename std::conditional<contains<vector_settings::maxCount::_16BIT, Args...>(), uint16_t,
+		typename std::conditional<contains<vector_settings::maxCount::_32BIT, Args...>(), uint32_t,uint64_t>::type>::type>::type;
 		static inline constexpr bool useInitialized = contains<vector_settings::useInitialized, Args...>();
 		static inline constexpr bool deepDelete = contains<vector_settings::deepDelete, Args...>();
 		static inline constexpr bool optimized = contains<vector_settings::optimized, Args...>();
 		static inline constexpr bool noSubscriptCheck = contains<vector_settings::noSubscriptCheck, Args...>();
 	};
 
-	template<typename T,typename setting = Vector_Setting<>, size_t(*resAcqFctPtr)(size_t size) = defaultResAcq>
+	template<typename T, typename setting = Vector_Setting<>, typename setting::size_c(*resAcqFctPtr)(typename setting::size_c size) = defaultResAcq>
+	struct Vector_Algorithms{
+		static inline constexpr auto RessourceAcqFctPtr = resAcqFctPtr;
+	};
+
+	template<typename T,typename setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T>>
 	class vector {
 
+		using size_c = typename setting::size_c;
+		static inline constexpr auto RessourceAcqFctPtr = Algorithms::RessourceAcqFctPtr;
 		static inline constexpr bool optimized = setting::optimized;
 		static inline constexpr bool deepDelete = setting::deepDelete && std::is_pointer<T>::value && std::is_destructible<T>::value;
 		static inline constexpr bool useInitialized = setting::useInitialized;
 		static inline constexpr bool noSubscriptCheck = setting::noSubscriptCheck;
-		static inline constexpr bool isArray = std::is_array<T>::value;
-		static_assert(!isArray, "Arrays cannot be used in vector -> use Array instead of vector");
+
+		static_assert(!std::is_array<T>::value, "Arrays cannot be used in vector -> use Array instead of vector");
 
 		T* mdata = nullptr;
-		size_t msize = 0, mcapacity = 0;
+		size_c mcapacity = 0,msize = 0;
 		using iterator = T * ;
 		using const_iterator = const T*;
 
-		vector(size_t startCapacity, size_t size) : mcapacity(startCapacity), msize(size) {
+		vector(size_c startCapacity, size_c size) : mcapacity(startCapacity), msize(size) {
 			if(startCapacity > 0)
 				allocate(startCapacity);
 		}
 
 	public:
-
 		vector() = default;
 
-		vector(size_t startCapacity) : vector(startCapacity,0) {}
+		vector(size_c startCapacity) : vector(startCapacity,0) {}
 
-		vector(const std::initializer_list<T>& list) :vector(list.size(),list.size()) {
+		vector(const std::initializer_list<T>& list) :vector(static_cast<size_c>(list.size()),static_cast<size_c>(list.size())) {
 			mcpy(list.begin(), mdata, msize);
 		}
 
-		template<typename = std::enable_if_t<(!(deepDelete && std::is_pointer<T>::value))>>
+		//template<typename = std::enable_if_t<(!(deepDelete))>>
 		vector(const vector& other) : vector(other.mcapacity,other.msize) {
+			static_assert(!deepDelete,"do not copy while deepDelete is active!");
 			mcpy(other.mdata, mdata, msize);
 		}
 
@@ -102,8 +119,9 @@ namespace kevDev {
 			swap(other);
 		}
 
-		template<typename = std::enable_if_t<(!(deepDelete && std::is_pointer<T>::value))>>
+		//template<typename = std::enable_if_t<(!(deepDelete && std::is_pointer<T>::value))>>
 		void operator=(const vector& other) {
+			static_assert(!deepDelete,"do not copy while deepDelete is active!");
 			vector tmp{ other };
 			swap(other);
 		}
@@ -125,7 +143,7 @@ namespace kevDev {
 		void operator~() = delete;
 		void operator-() = delete;
 
-		void reserve(size_t size) noexcept {
+		void reserve(size_c size) noexcept {
 			if (size > 0) {
 				if (!mdata) {
 					allocate(size);
@@ -134,7 +152,7 @@ namespace kevDev {
 			}
 		}
 
-		[[nodiscard]] size_t size() const noexcept {
+		[[nodiscard]] size_c size() const noexcept {
 			return msize;
 		}
 
@@ -142,11 +160,11 @@ namespace kevDev {
 			return mdata;
 		}
 
-		[[nodiscard]] size_t capacity() const noexcept{
+		[[nodiscard]] size_c capacity() const noexcept{
 			return mcapacity;
 		}
 
-		void resize(size_t size) noexcept {
+		void resize(size_c size) noexcept {
 			T* old = mdata;
 			allocate(size);
 			mcpy(old, mdata, msize);
@@ -154,7 +172,7 @@ namespace kevDev {
 		}
 
 		void pop_back() noexcept {
-			delElement(msize--);
+			delElement(--msize);
 		}
 
 		void assign(T* arr) noexcept {
@@ -174,23 +192,23 @@ namespace kevDev {
 			std::swap(this->msize, other.msize);
 		}
 
-		template<typename = std::enable_if_t<std::is_scalar<T>::value>>
-		void push_back(T elem) noexcept {
+		void push_back(const T& elem) {
 			if (msize < mcapacity) {
 				mdata[msize++] = elem;
-			} else {
-				auto newCap = resAcqFctPtr(mcapacity);
+			}
+			else {
+				auto newCap = RessourceAcqFctPtr(mcapacity);
 				resize(newCap);
 				mdata[msize++] = elem;
 			}
 		}
 
-		void push_back(const T& elem) noexcept {
+		void push_back(T&& elem) {
 			if (msize < mcapacity) {
 				mdata[msize++] = elem;
 			}
 			else {
-				auto newCap = resAcqFctPtr(mcapacity);
+				auto newCap = RessourceAcqFctPtr(mcapacity);
 				resize(newCap);
 				mdata[msize++] = elem;
 			}
@@ -200,26 +218,30 @@ namespace kevDev {
 			return mdata;
 		}
 
-		[[nodiscard]] const iterator begin() const noexcept {
-			return mdata;
+		[[nodiscard]] const_iterator begin() const noexcept {
+			return const_cast<T*>(mdata);
 		}
 
 		[[nodiscard]] iterator end() noexcept {
 			return mdata + msize;
 		}
 
-		[[nodiscard]] const iterator end() const noexcept {
-			return mdata + msize;
+		[[nodiscard]] const_iterator end() const noexcept {
+			return const_cast<T*>(mdata + msize);
 		}
 
-		[[nodiscard]] T& operator[](size_t index) {
+		[[nodiscard]] T& operator[](size_c index) {
 			if constexpr (!noSubscriptCheck) {
 				if (!(index < mcapacity)) {
 					if constexpr (!optimized) {
 						throw std::out_of_range(std::string("subscription was out of bounds by: ") + (std::to_string(index - mcapacity + 1)));
 					}
 					else {
-						return reinterpret_cast<T&>(mdata);
+						#if (defined(DEBUG) || defined(_DEBUG))
+							std::cerr << "subscription was out of bounds" << std::endl;
+						#endif
+						
+						return mdata[0];
 					}
 				}
 				else {
@@ -229,10 +251,6 @@ namespace kevDev {
 			else {
 				return mdata[index];
 			}
-		}
-
-		[[nodiscard]] T* operator[](const T& elem) {
-			return defaultSearchAlgo<T>(elem, mdata, msize);
 		}
 
 		void clear() noexcept {
@@ -251,7 +269,7 @@ namespace kevDev {
 		void delData(T* data) {
 			if (data != nullptr) {
 				if constexpr (deepDelete) {
-					for (size_t i = 0; i < mcapacity; i++) {
+					for (size_c i = 0; i < msize; i++) {
 						if (data[i] != nullptr)
 							delete data[i];
 					}
@@ -263,9 +281,10 @@ namespace kevDev {
 			}
 		}
 
-		inline void delElement(size_t index) {
+		inline void delElement(size_c index) {
 			if constexpr (std::is_pointer<T>::value) {
 				if constexpr (deepDelete) {
+					std::cout << " deleted element: " << mdata[index];
 					delete mdata[index];
 					mdata[index] = nullptr;
 				}
@@ -281,7 +300,7 @@ namespace kevDev {
 			}
 		}
 
-		void allocate(size_t capacity) noexcept {
+		void allocate(size_c capacity) noexcept {
 			mcapacity = capacity;
 			if constexpr ((std::is_pointer<T>::value && deepDelete) || useInitialized) {
 				mdata = DBG_NEW T[mcapacity]();
@@ -292,15 +311,15 @@ namespace kevDev {
 		}
 	};
 
-	template<typename T,typename setting = kevDev::Vector_Setting<>, size_t(*resAcqFctPtr)(size_t size) = defaultResAcq, typename = std::true_type>
-	void swap(vector<T, setting, resAcqFctPtr>& lhs, vector<T, setting, resAcqFctPtr>& rhs) {
+	template<typename T,typename setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T>>
+	void swap(vector<T, setting, Algorithms>& lhs, vector<T, setting, Algorithms>& rhs) {
 		lhs.swap(rhs);
 	}
 
-	template<typename T, typename setting = kevDev::Vector_Setting<>, size_t(*resAcqFctPtr)(size_t size) = defaultResAcq, typename = std::true_type>
-	std::ostream& operator<<(std::ostream& out,const vector<T, setting, resAcqFctPtr>& vector) {
+	template<typename T, typename setting = kevDev::Vector_Setting<>, typename Algorithms = Vector_Algorithms<T>>
+	std::ostream& operator<<(std::ostream& out,const vector<T, setting, Algorithms>& vector) {
 		out << "Size: " << vector.size() << " Capacity: " << vector.capacity() << '\n';
-		size_t num = 0;
+		typename setting::size_c num = 0;
 		for (auto& elem : vector) {
 			out << "  Element " << num << ": " << elem << '\n';
 		}

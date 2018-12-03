@@ -25,6 +25,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include <string>
 #include <vector>
 #include <chrono>
+#include "../algorithms.hpp"
 
 size_t fptr(size_t size);
 
@@ -33,12 +34,14 @@ size_t fptr(size_t size) {
 }
 
 class A {
-	int* df = new int(42);
+	kevDev::vector<int> v{};
+	//int* df = new int(42);
 public:
+	A() {
+		v.push_back(1);
+	}
 	~A() {
-		std::cout << "DTOR "<< *df << std::endl;
-		*df = 21;
-		delete df;
+		//std::cout << "DTOR "<< *df << std::endl;
 	}
 	int x = 42;
 	bool operator==(const A& other) const {
@@ -76,43 +79,44 @@ using namespace kevDev;
 using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::noSubscriptCheck, mtest>;
 using setting2 = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::deepDelete<false>, mtest>;
 
-
 static_assert(std::is_same_v<mtest,kevDev::vector_settings::maxCount::_16BIT>,"fail");
-namespace gtest{
-	template<typename T>
-	struct checkPointerPointer {
-		static inline constexpr bool value = false;
-	};
 
-	template<typename T>
-	struct checkPointerPointer<T**> {
-		static inline constexpr bool value = true;
-	};
-}
 static inline constexpr auto measuresize = 5000;
 int main() {
-	static_assert(gtest::checkPointerPointer<A**>::value, "fail");
 
-	//using tvec = vec tor<A*,setting2> ;
-	//tvec b;
-	/*
+	int tarr[]{ 5,7,2,1,9,0 };
+	kevDev::vector_algorithms::MergeSort(tarr, 6);
+	for (int i = 0; i < 6; i++)
+		std::cout << tarr[i] << std::endl;
+	
 	{
-		int n1 = 0, n2 = 1;
+		int n1 = 0, n2 = 21;
 		int* ptr1 = new int(); int* ptr2 = new int();
+		std::vector<int> ftest;
+
 		vector<int,setting> v1{};
-		v1.push_back(n1);v1.push_back(n2);
-		vector<int*,setting> v2{};
+		v1.push_back(5); v1.push_back(4); v1.push_back(3); v1.push_back(2); v1.push_back(1);
+		std::cout << v1 << std::endl;
+
+		ftest = (std::vector<int>)v1;
+		auto res = v1.find(21);
+		if (static_cast<bool>(res)) {
+			std::cout << "elem found! index: "<< v1.index(res) << std::endl;
+
+		}
+		vector<int*,setting2> v2{};
 		v2.push_back(ptr1);v2.push_back(ptr2);
 	}
 		{
-		A n1{}, n2{};
+		
 		A* ptr1 = new A(); A* ptr2 = new A();
-		vector<A,setting> v1{};
-		v1.push_back(std::move(n1));v1.push_back(std::move(n2));
-		vector<A,setting> v3{v1};
-		vector<A*,setting> v2{};
+		std::vector<A> v1;
+		v1.push_back(A());
+		//v1.push_back(A());v1.push_back(A());
+		//vector<A,setting> v3{v1};
+		vector<A*,setting2> v2{};
 		v2.push_back(ptr1);v2.push_back(ptr2);
-	}*/
+	}
 
 	size_t time = 0;
 	size_t measures = 50;
@@ -129,7 +133,7 @@ int main() {
 	}
 	std::cout << "own vector: " << time/measures << std::endl;
 	time = 0;
-
+	
 	for(size_t i = 0; i  < measures; i++){
 	time += measure([](){
 		std::vector<int> vec{};

@@ -25,8 +25,11 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include <climits>
 #include <exception>
 #include "MemoryOps.h"
+#include "algorithms.hpp"
 #include <iostream>
 #include <memory>
+#include <vector>
+#include "SmartVectorTypes.hpp"
 
 #ifdef _DEBUG
 #define DBG_NEW new ( _NORMAL_BLOCK , __FILE__ , __LINE__ )
@@ -38,99 +41,21 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 
 namespace kevDev {
 
-	template<typename size_c>
-	inline constexpr size_c defaultResAcq(size_c size) {
-		return (size + 1) * 2;
-	}
+	template<typename T, typename Setting, typename Algorithms>
+	struct Result;
 
-	template<typename T,typename size_c>
-	inline constexpr T* defaultSearchAlgo(const T& elem, T* data, size_c size) {
-		//requires equality comparable type concept will follow when msvc implements concepts
-		for (size_c i = 0; i < size; i++) {
-			if (data[i] == elem) return data+i;
-		}
-		return nullptr;
-	}
-
-	template<typename T>
-	struct checkPointerPointer {
-		static inline constexpr bool value = false;
-	};
-
-	template<typename T>
-	struct checkPointerPointer<T**> {
-		static inline constexpr bool value = true;
-	};
-
-	namespace vector_settings{
-		namespace maxCount{
-			struct _8BIT{};
-			struct _16BIT{};
-			struct _32BIT{};
-			struct _64BIT{};
-		}
-		struct useInitialized {};
-		 //consider to use this only when you dont know your bounds @ compile time and you are safe to dont get out of bounds
-		struct noSubscriptCheck {};
-
-		template<bool isArray>
-		struct deepDelete {
-			static inline constexpr bool value = false;
-		};
-
-		template<>
-		struct deepDelete<true> {
-			static inline constexpr bool value = true;
-		};
-
-		struct optimized {};
-	}
-
-	template<size_t x>
-	struct CalculateMaxCount {
-		using type = 
-		typename std::conditional<x <= UINT8_MAX, vector_settings::maxCount::_8BIT,
-			typename std::conditional<x <= UINT16_MAX, vector_settings::maxCount::_16BIT,
-				typename std::conditional<x <= UINT32_MAX, vector_settings::maxCount::_32BIT, vector_settings::maxCount::_64BIT
-				>::type
-			>::type
-		>::type;
-	};
-
-	template<typename T, typename... Ts>
-	constexpr bool contains()
-	{
-		return std::disjunction<std::is_same<T, Ts>...>::value;
-	}
-
-	template<typename... Args>
-	struct Vector_Setting {
-		using size_c = typename std::conditional<contains<vector_settings::maxCount::_8BIT, Args...>(), uint8_t,
-		typename std::conditional<contains<vector_settings::maxCount::_16BIT, Args...>(), uint16_t,
-		typename std::conditional<contains<vector_settings::maxCount::_32BIT, Args...>(), uint32_t,uint64_t>::type>::type>::type;
-		static inline constexpr bool useInitialized = contains<vector_settings::useInitialized, Args...>();
-		static inline constexpr bool deepDelete = contains<vector_settings::deepDelete<true>, Args...>() || 
-													contains<vector_settings::deepDelete<false>, Args...>();
-		static inline constexpr bool isArray = contains<vector_settings::deepDelete<true>, Args...>();
-		static inline constexpr bool optimized = contains<vector_settings::optimized, Args...>();
-		static inline constexpr bool noSubscriptCheck = contains<vector_settings::noSubscriptCheck, Args...>();
-	};
-
-	template<typename T, typename setting, typename setting::size_c(*resAcqFctPtr)(typename setting::size_c size) = defaultResAcq>
-	struct Vector_Algorithms{
-		static inline constexpr auto RessourceAcqFctPtr = resAcqFctPtr;
-	};
-
-	template<typename T,typename setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T,setting>>
+	template<typename T,typename Setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T,Setting>>
 	class vector {
-		using size_c = typename setting::size_c;
-		static inline constexpr auto RessourceAcqFctPtr = Algorithms::RessourceAcqFctPtr;
-		static inline constexpr bool optimized = setting::optimized;
-		static inline constexpr bool deepDelete = setting::deepDelete && std::is_pointer<T>::value && std::is_destructible<T>::value;
-		static inline constexpr bool useInitialized = setting::useInitialized;
-		static inline constexpr bool noSubscriptCheck = setting::noSubscriptCheck;
+		using size_c = typename Setting::size_c;
+		static inline constexpr auto resizeFactorFunction = Algorithms::ResFctPtr;
+		static inline constexpr auto searchAlgorithm = Algorithms::searchAlgo;
+		static inline constexpr auto sortAlgorithm = Algorithms::sortAlgo;
+		static inline constexpr bool optimized = Setting::optimized;
+		static inline constexpr bool deepDelete = Setting::deepDelete && std::is_pointer<T>::value && std::is_destructible<T>::value;
+		static inline constexpr bool useInitialized = Setting::useInitialized;
+		static inline constexpr bool noSubscriptCheck = Setting::noSubscriptCheck;
 		static_assert(!std::is_array<T>::value, "stack Arrays cannot be used in vector -> use Array instead of vector");
-		static_assert(!(checkPointerPointer<T>::value && deepDelete), "Pointer to Pointer ist not allowed when using deep Delete");
+		static_assert(!(details::checkPointerPointer<T>::value && deepDelete), "Pointer to Pointer ist not allowed when using deep Delete");
 		
 
 		T* mdata = nullptr;
@@ -161,6 +86,7 @@ namespace kevDev {
 			swap(other);
 		}
 
+
 		void operator=(const vector& other) {
 			static_assert(!deepDelete,"do not copy while deepDelete is active!");
 			vector tmp{ other };
@@ -183,6 +109,10 @@ namespace kevDev {
 		void operator/(const vector& other) = delete;
 		void operator~() = delete;
 		void operator-() = delete;
+
+		explicit operator std::vector<T>() {
+			return std::vector<T>(begin(), end());
+		}
 
 		void reserve(size_c size) noexcept {
 #if !(defined(DEBUG) || defined(_DEBUG))				
@@ -247,24 +177,44 @@ namespace kevDev {
 		}
 
 		void push_back(const T& elem) {
-			if (msize < mcapacity) {
-				mdata[msize++] = elem;
+			if(msize >= mcapacity) {
+				resize(resizeFactorFunction(mcapacity));
 			}
-			else {
-				size_c newCap = RessourceAcqFctPtr(mcapacity);
-				resize(newCap);
-				mdata[msize++] = elem;
-			}
+			mdata[msize++] = elem;
 		}
 
 		void push_back(T&& elem) {
-			if (msize < mcapacity) {
-				mdata[msize++] = elem;
+			if (msize >= mcapacity) {
+				resize(resizeFactorFunction(mcapacity));
+			}
+			mdata[msize++] = elem;
+		}
+
+		void sort() noexcept {
+			sortAlgorithm(mdata, msize);
+		}
+
+		[[nodiscard]] Result<T,Setting,Algorithms> find(const T& elem) const noexcept{
+			return Result<T, Setting, Algorithms>(searchAlgorithm(elem, mdata, msize));
+		}
+
+		[[nodiscard]] size_c index(const Result<T, Setting, Algorithms>& elem) const noexcept {
+			return index((T&)elem);
+		}
+
+		[[nodiscard]] size_c index(const T& elem) const noexcept{
+			if constexpr (!optimized) {
+				T* tmp = &elem;
+				size_c result = tmp - mdata;
+				if (tmp >= mdata && (result < msize)) {
+					result;
+				}
+				else {
+					throw std::out_of_range(std::string("element was not in vector"));
+				}
 			}
 			else {
-				auto newCap = RessourceAcqFctPtr(mcapacity);
-				resize(newCap);
-				mdata[msize++] = elem;
+				return static_cast<size_c>(&elem - mdata);
 			}
 		}
 
@@ -390,4 +340,38 @@ namespace kevDev {
 		return out;
 	}
 
+	template<size_t x>
+	struct CalculateMaxCount {
+		using type =
+			typename std::conditional<x <= UINT8_MAX, vector_settings::maxCount::_8BIT,
+			typename std::conditional<x <= UINT16_MAX, vector_settings::maxCount::_16BIT,
+			typename std::conditional<x <= UINT32_MAX, vector_settings::maxCount::_32BIT, vector_settings::maxCount::_64BIT
+			>::type
+			>::type
+			>::type;
+	};
+
+	template<typename T, typename Setting, typename Algorithms>
+	struct Result {
+
+		friend class vector<T, Setting, Algorithms>;
+		Result(const Result&) = delete;
+		Result(Result&&) = delete;
+
+		void operator=(Result&&) = delete;
+		void operator=(const Result&) = delete;
+		~Result() = default;
+
+		operator bool() {
+			return mData;
+		}
+		operator T&() const {
+			return *mData;
+		}
+		operator T() = delete;
+	private:
+		Result() = default;
+		Result(T* data) :mData(data) {}
+		T* mData = nullptr;
+	};
 }

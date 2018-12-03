@@ -89,11 +89,13 @@ namespace gtest{
 		static inline constexpr bool value = true;
 	};
 }
+static inline constexpr auto measuresize = 5000;
 int main() {
 	static_assert(gtest::checkPointerPointer<A**>::value, "fail");
-	constexpr auto measuresize = 5000;
-	using tvec = vector<A*,setting2> ;
-	tvec b;
+
+	//using tvec = vec tor<A*,setting2> ;
+	//tvec b;
+	/*
 	{
 		int n1 = 0, n2 = 1;
 		int* ptr1 = new int(); int* ptr2 = new int();
@@ -110,7 +112,7 @@ int main() {
 		vector<A,setting> v3{v1};
 		vector<A*,setting> v2{};
 		v2.push_back(ptr1);v2.push_back(ptr2);
-	}
+	}*/
 
 	size_t time = 0;
 	size_t measures = 50;
@@ -120,7 +122,7 @@ int main() {
 		for (int i = 0; i < measuresize; i++) {
 			vector<int, setting> vec(measuresize);
 			vec.push_back(std::rand());
-			for (int j = 0; j < measuresize; j++) {
+			for (unsigned short j = 0; j < measuresize; j++) {
 				vec[j++] = std::rand();
 			}
 		}});
@@ -161,4 +163,6 @@ std::cout << "raw array: " << time/measures << std::endl;
 	_CrtDumpMemoryLeaks();
 	#endif
     std::cout << "Hello World!\n"; 
+	int Z;
+	std::cin >> Z;
 }

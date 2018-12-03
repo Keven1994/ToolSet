@@ -116,12 +116,12 @@ namespace kevDev {
 		static inline constexpr bool noSubscriptCheck = contains<vector_settings::noSubscriptCheck, Args...>();
 	};
 
-	template<typename T, typename setting = Vector_Setting<>, typename setting::size_c(*resAcqFctPtr)(typename setting::size_c size) = defaultResAcq>
+	template<typename T, typename setting, typename setting::size_c(*resAcqFctPtr)(typename setting::size_c size) = defaultResAcq>
 	struct Vector_Algorithms{
 		static inline constexpr auto RessourceAcqFctPtr = resAcqFctPtr;
 	};
 
-	template<typename T,typename setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T>>
+	template<typename T,typename setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T,setting>>
 	class vector {
 		using size_c = typename setting::size_c;
 		static inline constexpr auto RessourceAcqFctPtr = Algorithms::RessourceAcqFctPtr;
@@ -251,7 +251,7 @@ namespace kevDev {
 				mdata[msize++] = elem;
 			}
 			else {
-				auto newCap = RessourceAcqFctPtr(mcapacity);
+				size_c newCap = RessourceAcqFctPtr(mcapacity);
 				resize(newCap);
 				mdata[msize++] = elem;
 			}
@@ -375,12 +375,12 @@ namespace kevDev {
 		}
 	};
 
-	template<typename T,typename setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T>>
+	template<typename T,typename setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T,setting>>
 	void swap(vector<T, setting, Algorithms>& lhs, vector<T, setting, Algorithms>& rhs) {
 		lhs.swap(rhs);
 	}
 
-	template<typename T, typename setting = kevDev::Vector_Setting<>, typename Algorithms = Vector_Algorithms<T>>
+	template<typename T, typename setting = kevDev::Vector_Setting<>, typename Algorithms = Vector_Algorithms<T,setting>>
 	std::ostream& operator<<(std::ostream& out,const vector<T, setting, Algorithms>& vector) {
 		out << "Size: " << vector.size() << " Capacity: " << vector.capacity() << '\n';
 		typename setting::size_c num = 0;

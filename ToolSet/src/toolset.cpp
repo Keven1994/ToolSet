@@ -37,10 +37,10 @@ bool operator==(const A& rhs, A& lhs) {
 
 
 
-void measure(void (*fptr) (void)) ;
+auto measure(void (*fptr) (void)) ;
 
-void measure(void (*fptr) (void)) {
-	std::cout << "start time measurement" << std::endl;
+auto measure(void (*fptr) (void)) {
+	//std::cout << "start time measurement" << std::endl;
 
 	auto start_time = std::chrono::high_resolution_clock::now();
 
@@ -48,21 +48,24 @@ void measure(void (*fptr) (void)) {
 
 	auto end_time = std::chrono::high_resolution_clock::now();
 	auto time = std::chrono::duration_cast<std::chrono::milliseconds>((end_time - start_time)).count();
-
-	std::cout << "time elapsed: " << time << std::endl;
+	return time;
+	//std::cout << " time elapsed: " << time << std::endl;
 }
 using mtest = typename kevDev::CalculateMaxCount<20000>::type;
 using namespace kevDev;
-using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized, mtest>;
-using setting2 = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::deepDelete, mtest>;
+using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::noSubscriptCheck, mtest>;
+using setting2 = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,typename vector_settings::deepDelete<true>, mtest>;
 
 
 static_assert(std::is_same_v<mtest,kevDev::vector_settings::maxCount::_16BIT>,"fail");
 
 int main() {
-	constexpr auto measuresize = 20000;
-
-
+	constexpr auto measuresize = 5000;
+	{
+	A* b = new A[5]();
+	vector<A*,setting2> vec2(1);
+	vec2.push_back(b);
+	}
 	{
 		int n1 = 0, n2 = 1;
 		int* ptr1 = new int(); int* ptr2 = new int();
@@ -81,17 +84,24 @@ int main() {
 		v2.push_back(ptr1);v2.push_back(ptr2);
 	}
 
-	measure([]() {
-	vector<int, setting> vec(20000);
-	for (int i = 0; i < measuresize; i++) {
-		vec.push_back(std::rand());
-		for (int j = 0; j < measuresize; j++) {
-			vec[j++] = std::rand();
-		}
-	}});
+	size_t time = 0;
+	size_t measures = 50;
 
+	for(size_t i = 0; i  < measures; i++){
+		time+=measure([]() {
+		for (int i = 0; i < measuresize; i++) {
+			vector<int, setting> vec(measuresize);
+			vec.push_back(std::rand());
+			for (int j = 0; j < measuresize; j++) {
+				vec[j++] = std::rand();
+			}
+		}});
+	}
+	std::cout << "own vector: " << time/measures << std::endl;
+	time = 0;
 
-	measure([](){
+	for(size_t i = 0; i  < measures; i++){
+	time += measure([](){
 		std::vector<int> vec{};
 		vec.reserve(measuresize);
 		for (int i = 0; i < measuresize; i++) {
@@ -101,8 +111,12 @@ int main() {
 			}
 		}
 	});
+	}
 
-	measure([]() {
+std::cout << "std vector: " << time/measures << std::endl;
+time = 0;
+	for(size_t i = 0; i  < measures; i++){
+	time += measure([]() {
 		int* arr = new int[measuresize];
 		for (int i = 0; i < measuresize; i++) {
 			arr[i] = std::rand();
@@ -110,8 +124,11 @@ int main() {
 				arr[j++] = std::rand();
 			}
 		}
+		delete[] arr;
 	});
 
+	}
+std::cout << "raw array: " << time/measures << std::endl;
 	#ifdef _WIN32
 	_CrtDumpMemoryLeaks();
 	#endif

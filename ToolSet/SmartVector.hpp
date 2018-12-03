@@ -40,9 +40,19 @@ namespace kevDev {
 			struct _64BIT{};
 		}
 		struct useInitialized {};
-		 //consider to use this only when you dont know your bounds @ compile time and you are safe to dont go out of bounds
+		 //consider to use this only when you dont know your bounds @ compile time and you are safe to dont get out of bounds
 		struct noSubscriptCheck {};
-		struct deepDelete {};
+
+		template<bool isArray>
+		struct deepDelete {
+			static inline constexpr bool value = false;
+		};
+
+		template<>
+		struct deepDelete<true> {
+			static inline constexpr bool value = true;
+		};
+
 		struct optimized {};
 	}
 
@@ -69,7 +79,9 @@ namespace kevDev {
 		typename std::conditional<contains<vector_settings::maxCount::_16BIT, Args...>(), uint16_t,
 		typename std::conditional<contains<vector_settings::maxCount::_32BIT, Args...>(), uint32_t,uint64_t>::type>::type>::type;
 		static inline constexpr bool useInitialized = contains<vector_settings::useInitialized, Args...>();
-		static inline constexpr bool deepDelete = contains<vector_settings::deepDelete, Args...>();
+		static inline constexpr bool deepDelete = contains<vector_settings::deepDelete<true>, Args...>() || 
+													contains<vector_settings::deepDelete<false>, Args...>();
+		static inline constexpr bool isArray = contains<vector_settings::deepDelete<true>, Args...>();
 		static inline constexpr bool optimized = contains<vector_settings::optimized, Args...>();
 		static inline constexpr bool noSubscriptCheck = contains<vector_settings::noSubscriptCheck, Args...>();
 	};
@@ -89,7 +101,7 @@ namespace kevDev {
 		static inline constexpr bool useInitialized = setting::useInitialized;
 		static inline constexpr bool noSubscriptCheck = setting::noSubscriptCheck;
 
-		static_assert(!std::is_array<T>::value, "Arrays cannot be used in vector -> use Array instead of vector");
+		static_assert(!std::is_array<T>::value, "stack Arrays cannot be used in vector -> use Array instead of vector");
 
 		T* mdata = nullptr;
 		size_c mcapacity = 0,msize = 0;
@@ -282,8 +294,14 @@ namespace kevDev {
 			if (data != nullptr) {
 				if constexpr (deepDelete) {
 					for (size_c i = 0; i < msize; i++) {
-						if (data[i] != nullptr)
+					if constexpr(setting::isArray){
+						if(data[i] != nullptr)
+							delete[] data[i];
+					}
+					else {
+						if(data[i] != nullptr)
 							delete data[i];
+					}
 					}
 					delete[] data;
 				}
@@ -296,8 +314,12 @@ namespace kevDev {
 		inline void delElement(size_c index) {
 			if constexpr (std::is_pointer<T>::value) {
 				if constexpr (deepDelete) {
-					std::cout << " deleted element: " << mdata[index];
-					delete mdata[index];
+					if constexpr(setting::isArray){
+						delete[] mdata[index];
+					}
+					else {
+						delete mdata[index];
+					}
 					mdata[index] = nullptr;
 				}
 				else {

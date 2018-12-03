@@ -340,3 +340,5 @@ ToolSet/\.vscode/settings\.json
 *.o
 
 ToolSet/makefile
+
+ToolSet/main

@@ -54,18 +54,26 @@ auto measure(void (*fptr) (void)) {
 using mtest = typename kevDev::CalculateMaxCount<20000>::type;
 using namespace kevDev;
 using setting = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::noSubscriptCheck, mtest>;
-using setting2 = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,typename vector_settings::deepDelete<true>, mtest>;
+using setting2 = typename kevDev::Vector_Setting<kevDev::vector_settings::optimized,vector_settings::deepDelete<false>, mtest>;
 
 
 static_assert(std::is_same_v<mtest,kevDev::vector_settings::maxCount::_16BIT>,"fail");
+namespace gtest{
+	template<typename T>
+	struct checkPointerPointer {
+		static inline constexpr bool value = false;
+	};
 
+	template<typename T>
+	struct checkPointerPointer<T**> {
+		static inline constexpr bool value = true;
+	};
+}
 int main() {
+	static_assert(gtest::checkPointerPointer<A**>::value, "fail");
 	constexpr auto measuresize = 5000;
-	{
-	A* b = new A[5]();
-	vector<A*,setting2> vec2(1);
-	vec2.push_back(b);
-	}
+	using tvec = vector<A**,setting2> ;
+	tvec b;
 	{
 		int n1 = 0, n2 = 1;
 		int* ptr1 = new int(); int* ptr2 = new int();

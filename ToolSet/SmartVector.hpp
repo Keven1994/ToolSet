@@ -32,6 +32,16 @@ namespace kevDev {
 		return nullptr;
 	}
 
+	template<typename T>
+	struct checkPointerPointer {
+		static inline constexpr bool value = false;
+	};
+
+	template<typename T>
+	struct checkPointerPointer<T**> {
+		static inline constexpr bool value = true;
+	};
+
 	namespace vector_settings{
 		namespace maxCount{
 			struct _8BIT{};
@@ -93,15 +103,15 @@ namespace kevDev {
 
 	template<typename T,typename setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T>>
 	class vector {
-
 		using size_c = typename setting::size_c;
 		static inline constexpr auto RessourceAcqFctPtr = Algorithms::RessourceAcqFctPtr;
 		static inline constexpr bool optimized = setting::optimized;
 		static inline constexpr bool deepDelete = setting::deepDelete && std::is_pointer<T>::value && std::is_destructible<T>::value;
 		static inline constexpr bool useInitialized = setting::useInitialized;
 		static inline constexpr bool noSubscriptCheck = setting::noSubscriptCheck;
-
 		static_assert(!std::is_array<T>::value, "stack Arrays cannot be used in vector -> use Array instead of vector");
+		static_assert(!(checkPointerPointer<T>::value && deepDelete), "Pointer to Pointer ist not allowed when using deep Delete");
+		
 
 		T* mdata = nullptr;
 		size_c mcapacity = 0,msize = 0;
@@ -285,7 +295,7 @@ namespace kevDev {
 			return size;
 		}
 
-		~vector() {
+		~vector() noexcept {
 			delData(mdata);
 		}
 		private:

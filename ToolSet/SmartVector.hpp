@@ -54,6 +54,7 @@ namespace kevDev {
 		static inline constexpr bool deepDelete = Setting::deepDelete && std::is_pointer<T>::value && std::is_destructible<T>::value;
 		static inline constexpr bool useInitialized = Setting::useInitialized;
 		static inline constexpr bool noSubscriptCheck = Setting::noSubscriptCheck;
+		static inline constexpr bool isArray = Setting::isArray;
 		static_assert(!std::is_array<T>::value, "stack Arrays cannot be used in vector -> use Array instead of vector");
 		static_assert(!(details::checkPointerPointer<T>::value && deepDelete), "Pointer to Pointer ist not allowed when using deep Delete");
 		
@@ -273,7 +274,7 @@ namespace kevDev {
 			if (data != nullptr) {
 				if constexpr (deepDelete) {
 					for (size_c i = 0; i < msize; i++) {
-					if constexpr(setting::isArray){
+					if constexpr(isArray){
 						if(data[i] != nullptr)
 							delete[] data[i];
 					}
@@ -293,7 +294,7 @@ namespace kevDev {
 		inline void delElement(size_c index) {
 			if constexpr (std::is_pointer<T>::value) {
 				if constexpr (deepDelete) {
-					if constexpr(setting::isArray){
+					if constexpr(isArray){
 						delete[] mdata[index];
 					}
 					else {

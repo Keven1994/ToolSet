@@ -172,7 +172,7 @@ time = 0;
 
 	}
 std::cout << "raw array: " << time/measures << std::endl;
-	#ifdef _WIN32
+	#ifdef _MSVC
 	_CrtDumpMemoryLeaks();
 	#endif
     std::cout << "Hello World!\n"; 

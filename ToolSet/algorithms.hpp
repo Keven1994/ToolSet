@@ -1,4 +1,6 @@
 #pragma once
+#include <random>
+//merge sort from: http://www.codebind.com/cpp-tutorial/cpp-example-merge-sort-algorithm/
 namespace kevDev {
 	namespace vector_algorithms {
 		namespace details {
@@ -9,19 +11,19 @@ namespace kevDev {
 				size_c k = 0;//k is for the temporary array
 				while (i <= mi && j <= hi) {
 					if (arr[i] <= arr[j])
-						temp[k++] = arr[i++];
+						temp[k++] = std::move(arr[i++]);
 					else
-						temp[k++] = arr[j++];
+						temp[k++] = std::move(arr[j++]);
 				}
 				//rest elements of left-half
 				while (i <= mi)
-					temp[k++] = arr[i++];
+					temp[k++] = std::move(arr[i++]);
 				//rest elements of right-half
 				while (j <= hi)
-					temp[k++] = arr[j++];
+					temp[k++] = std::move(arr[j++]);
 				//copy the mergered temporary array to the original array
 				for (k = 0, i = lo; i <= hi; ++i, ++k)
-					arr[i] = temp[k];
+					arr[i] = std::move(temp[k]);
 
 				delete[]temp;
 			}
@@ -41,6 +43,31 @@ namespace kevDev {
 		void MergeSort(T arr[], size_c arr_size) noexcept {
 			//requires T <= T && T >= T
 			details::MergeSortHelper<T,size_c>(arr, 0, arr_size - 1);
+		}
+
+		template<typename T, typename size_c>
+		void RandomSort(T arr[], size_c arr_size) noexcept {
+			std::random_device rd;
+			std::mt19937 eng(rd()); 
+			std::uniform_int_distribution<> distr(0, arr_size-1); 
+			bool b;
+			size_t l = 0;
+
+			do {
+				b = true;
+				for (size_c i = 0; i < arr_size-1; i++) {
+					if (arr[i] > arr[i + 1]) {
+						b = false;
+						size_c num = distr(eng);
+						T tmp = std::move(arr[num]);
+						arr[num] = arr[i];
+						arr[i] = tmp;
+						l++;
+					}
+
+				}
+			} while (!b);
+			std::cout << "sorted: " << l << std::endl;
 		}
 
 		template<typename size_c>

@@ -81,13 +81,22 @@ using setting2 = typename kevDev::Vector_Setting<kevDev::vector_settings::optimi
 
 static_assert(std::is_same_v<mtest,kevDev::vector_settings::maxCount::_16BIT>,"fail");
 
-static inline constexpr auto measuresize = 5000;
+std::random_device rd;
+std::mt19937 eng(rd());
+std::uniform_int_distribution<> distr(4000, 6000);
+static inline auto measuresize = distr(eng);
 int main() {
+	/*
+	volatile int* tarr = new int[50000];
+	for(int i = 49999; i >= 0; i--)
+		tarr[i] = std::rand();
+	kevDev::vector_algorithms::MergeSort(tarr, 50000);
 
-	int tarr[]{ 5,7,2,1,9,0 };
-	kevDev::vector_algorithms::MergeSort(tarr, 6);
-	for (int i = 0; i < 6; i++)
-		std::cout << tarr[i] << std::endl;
+		if(std::rand()-1)
+		std::cout << tarr[42] << std::endl;
+		else {
+			std::cout << tarr[21] << std::endl;
+		}
 	
 	{
 		int n1 = 0, n2 = 21;
@@ -117,7 +126,7 @@ int main() {
 		vector<A*,setting2> v2{};
 		v2.push_back(ptr1);v2.push_back(ptr2);
 	}
-
+	*/
 	size_t time = 0;
 	size_t measures = 50;
 

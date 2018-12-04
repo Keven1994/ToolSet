@@ -86,7 +86,6 @@ namespace kevDev {
 			swap(other);
 		}
 
-
 		void operator=(const vector& other) {
 			static_assert(!deepDelete,"do not copy while deepDelete is active!");
 			vector tmp{ other };
@@ -136,15 +135,15 @@ namespace kevDev {
 			#endif
 		}
 
-		[[nodiscard]] size_c size() const noexcept {
+		[[nodiscard]] inline size_c size() const noexcept {
 			return msize;
 		}
 
-		[[nodiscard]] T* data() const noexcept {
+		[[nodiscard]] inline T* data() const noexcept {
 			return mdata;
 		}
 
-		[[nodiscard]] size_c capacity() const noexcept{
+		[[nodiscard]] inline size_c capacity() const noexcept{
 			return mcapacity;
 		}
 
@@ -155,16 +154,16 @@ namespace kevDev {
 			delData(old);
 		}
 
-		void pop_back() noexcept {
+		inline void pop_back() noexcept {
 			delElement(--msize);
 		}
 
-		void assign(T* arr) noexcept {
+		inline void assign(T* arr) noexcept {
 			delData(mdata);
 			mdata = arr;
 		}
 
-		void assign(vector& arr) noexcept {
+		inline void assign(vector& arr) noexcept {
 			delData(mdata);
 			mdata = arr.mdata;
 			arr.mdata = nullptr;
@@ -176,14 +175,14 @@ namespace kevDev {
 			std::swap(this->msize, other.msize);
 		}
 
-		void push_back(const T& elem) {
+		inline void push_back(const T& elem) noexcept {
 			if(msize >= mcapacity) {
 				resize(resizeFactorFunction(mcapacity));
 			}
 			mdata[msize++] = elem;
 		}
 
-		void push_back(T&& elem) {
+		inline void push_back(T&& elem) {
 			if (msize >= mcapacity) {
 				resize(resizeFactorFunction(mcapacity));
 			}

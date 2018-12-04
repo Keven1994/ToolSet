@@ -132,11 +132,11 @@ int main() {
 
 	for(size_t i = 0; i  < measures; i++){
 		time+=measure([]() {
+		vector<int, setting> vec(measuresize);
 		for (int i = 0; i < measuresize; i++) {
-			vector<int, setting> vec(measuresize);
 			vec.push_back(std::rand());
 			for (unsigned short j = 0; j < measuresize; j++) {
-				vec[j++] = std::rand();
+				vec[j] = std::rand();
 			}
 		}});
 	}
@@ -150,7 +150,7 @@ int main() {
 		for (int i = 0; i < measuresize; i++) {
 			vec.push_back(std::rand());
 			for (int j = 0; j < measuresize; j++) {
-				vec[j++] = std::rand();
+				vec[j] = std::rand();
 			}
 		}
 	});
@@ -164,7 +164,7 @@ time = 0;
 		for (int i = 0; i < measuresize; i++) {
 			arr[i] = std::rand();
 			for (int j = 0; j < measuresize; j++) {
-				arr[j++] = std::rand();
+				arr[j] = std::rand();
 			}
 		}
 		delete[] arr;

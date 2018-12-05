@@ -61,7 +61,7 @@ namespace kevDev {
 	template<typename T, typename setting,
 		typename setting::size_c(*resizeFactorFunction)(typename setting::size_c size) noexcept = vector_algorithms::defaultResAcq,
 		T* (*searchAlgorithm)(const T& elem, T* data, typename setting::size_c size) noexcept = vector_algorithms::defaultSearchAlgo,
-		void(*sortAlgorithm)(T data[], typename setting::size_c) noexcept = vector_algorithms::MergeSort>
+		void (*sortAlgorithm)(T data[],typename setting::size_c) noexcept = vector_algorithms::MergeSort>
 
 	struct Vector_Algorithms {
 		static inline constexpr auto ResFctPtr = resizeFactorFunction;

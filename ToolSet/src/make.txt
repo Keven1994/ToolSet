@@ -1,0 +1,1 @@
+c++ -std=c++17 -O3 -static-libstdc++ -static-libgcc toolset.cpp -o toolset.exe

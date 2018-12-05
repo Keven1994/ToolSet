@@ -46,6 +46,22 @@ namespace kevDev {
 
 	template<typename T,typename Setting = Vector_Setting<>, typename Algorithms = Vector_Algorithms<T,Setting>>
 	class vector {
+
+
+		using value_type = T;
+		using allocator_type = typename std::vector<T>::allocator_type;
+		using pointer = T*;
+		using const_pointer = const T*;
+		using reference = T & ;
+		using const_reference = const T&;
+		using size_type = typename Setting::size_c;
+		using difference_type = typename std::vector<T>::difference_type;
+		using iterator = typename T*;
+		using const_iterator = typename const T*;
+		using reverse_iterator =  typename std::reverse_iterator<iterator>;
+		using const_reverse_iterator = typename std::reverse_iterator<const_iterator>;
+
+
 		using size_c = typename Setting::size_c;
 		static inline constexpr auto resizeFactorFunction = Algorithms::ResFctPtr;
 		static inline constexpr auto searchAlgorithm = Algorithms::searchAlgo;

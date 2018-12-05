@@ -342,3 +342,5 @@ ToolSet/\.vscode/settings\.json
 ToolSet/makefile
 
 ToolSet/main
+
+ToolSet/src/toolset\.exe

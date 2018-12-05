@@ -47,8 +47,7 @@ namespace kevDev {
 
 		template<typename T, typename size_c>
 		void RandomSort(T arr[], size_c arr_size) noexcept {
-			std::random_device rd;
-			std::mt19937 eng(rd()); 
+			std::mt19937 eng(std::random_device());
 			std::uniform_int_distribution<> distr(0, arr_size-1); 
 			bool b;
 			size_t l = 0;
@@ -76,12 +75,29 @@ namespace kevDev {
 		}
 
 		template<typename T, typename size_c>
-		[[nodiscard]] inline constexpr T* defaultSearchAlgo(const T& elem, T* data, size_c size) noexcept {
+		[[nodiscard]] inline constexpr T* linearSearch(const T& elem, T* data, size_c size) noexcept {
 			//requires equality comparable type concept will follow when msvc implements it
 			for (size_c i = 0; i < size; i++) {
 				if (data[i] == elem) return data + i;
 			}
 			return nullptr;
+		}
+
+		template<typename T, typename size_c>
+		[[nodiscard]] inline constexpr T* binarySearch(const T& elem, T* data, size_c size) noexcept {
+			//requires equality comparable type concept will follow when msvc implements it
+			auto mid = (data + size / 2);
+			auto right = mid + 1;
+			size_c r_size = (size / 2) - 1 + (size % 2);
+			//mid
+			if (*mid == elem) {
+				return mid;
+			}
+			if (size <= 1) {
+				return nullptr;
+			}
+			if (elem > *mid) return binarySearch(elem, right, r_size);
+			else if (elem <= *mid) return binarySearch(elem, data, size / 2);
 		}
 	}
 }

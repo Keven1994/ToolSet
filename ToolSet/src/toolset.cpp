@@ -90,8 +90,17 @@ std::mt19937 eng(rd());
 std::uniform_int_distribution<> distr(4000, 6000);
 static inline 	int until = 0;
 static inline auto measuresize = 7000;
-#include <signal.h>
+
 int main() {
+
+	std::cout << " test " << std::endl;
+	int arr[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10};
+	for (int i = 0; i <= 10; i++) {
+		auto gt = vector_algorithms::binarySearch<int, int>(i, arr, 11);
+		std::cout << " lem: " << (gt != nullptr ? *gt : 42) << '\n';
+	}
+
+
 	std::cout <<"measuresize: "<< measuresize << std::endl;
 	/*
 	{

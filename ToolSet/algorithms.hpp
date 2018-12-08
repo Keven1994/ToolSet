@@ -4,28 +4,30 @@
 namespace kevDev {
 	namespace vector_algorithms {
 		namespace details {
+
+			template<typename T>
+			static inline T* temp = nullptr;
+
 			template<typename T, typename size_c>
 			void Merger(T arr[], size_c lo, size_c  mi, size_c hi) {
-				T *temp = new T[hi - lo + 1];//temporary merger array
+				//T *temp = new T[hi - lo + 1];//temporary merger array
 				size_c i = lo, j = mi + 1;//i is for left-hand,j is for right-hand
 				size_c k = 0;//k is for the temporary array
 				while (i <= mi && j <= hi) {
 					if (arr[i] <= arr[j])
-						temp[k++] = std::move(arr[i++]);
+						temp<T>[k++] = std::move(arr[i++]);
 					else
-						temp[k++] = std::move(arr[j++]);
+						temp<T>[k++] = std::move(arr[j++]);
 				}
 				//rest elements of left-half
 				while (i <= mi)
-					temp[k++] = std::move(arr[i++]);
+					temp<T>[k++] = std::move(arr[i++]);
 				//rest elements of right-half
 				while (j <= hi)
-					temp[k++] = std::move(arr[j++]);
+					temp<T>[k++] = std::move(arr[j++]);
 				//copy the mergered temporary array to the original array
 				for (k = 0, i = lo; i <= hi; ++i, ++k)
-					arr[i] = std::move(temp[k]);
-
-				delete[]temp;
+					arr[i] = std::move(temp<T>[k]);
 			}
 			template<typename T, typename size_c>
 			void MergeSortHelper(T arr[], size_c lo, size_c hi) {
@@ -42,7 +44,9 @@ namespace kevDev {
 		template<typename T, typename size_c>
 		void MergeSort(T arr[], size_c arr_size) noexcept {
 			//requires T <= T && T >= T
+			details::temp<T> = new T[arr_size];
 			details::MergeSortHelper<T,size_c>(arr, 0, arr_size - 1);
+			delete[] details::temp<T>;
 		}
 
 		template<typename T, typename size_c>

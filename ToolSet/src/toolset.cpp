@@ -74,7 +74,7 @@ auto measure(void (*fptr) (void)) {
 	fptr();
 
 	auto end_time = std::chrono::high_resolution_clock::now();
-	auto time = std::chrono::duration_cast<std::chrono::milliseconds>((end_time - start_time)).count();
+	auto time = std::chrono::duration_cast<std::chrono::microseconds>((end_time - start_time)).count();
 	return time;
 	//std::cout << " time elapsed: " << time << std::endl;
 }
@@ -88,18 +88,23 @@ static_assert(std::is_same_v<mtest,kevDev::vector_settings::maxCount::_16BIT>,"f
 std::random_device rd;
 std::mt19937 eng(rd());
 std::uniform_int_distribution<> distr(4000, 6000);
+std::uniform_int_distribution<> distr2(40000, 60000);
 static inline 	int until = 0;
 static inline auto measuresize = 7000;
-
+static inline int* arr = new int[100000];
+static inline int search = distr2(eng);
 int main() {
 
 	std::cout << " test " << std::endl;
-	int arr[] = { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9,10};
-	for (int i = 0; i <= 10; i++) {
-		auto gt = vector_algorithms::binarySearch<int, int>(i, arr, 11);
-		std::cout << " lem: " << (gt != nullptr ? *gt : 42) << '\n';
-	}
 
+	for (int i = 0; i <= 100000; i++) {
+		arr[i] = std::rand() ;
+	}
+	//arr[3000] = 42;
+
+	std::cout << "took: " << measure([]() {std::cout << "elem: " << *kevDev::vector_algorithms::binarySearch<int, int>(arr[search], arr, 100000) << std::endl; }) << std::endl;
+	search = distr2(eng);
+	std::cout << "took: " << measure([]() {std::cout << *kevDev::vector_algorithms::linearSearch<int, int>(arr[search], arr, 100000) << std::endl; }) << std::endl;
 
 	std::cout <<"measuresize: "<< measuresize << std::endl;
 	/*

@@ -27,6 +27,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SO
 #include <chrono>
 #include "../algorithms.hpp"
 
+
 size_t fptr(size_t size);
 
 size_t fptr(size_t size) {
@@ -90,23 +91,12 @@ std::mt19937 eng(rd());
 std::uniform_int_distribution<> distr(4000, 6000);
 std::uniform_int_distribution<> distr2(40000, 60000);
 static inline 	int until = 0;
-static inline auto measuresize = 7000;
+static inline auto measuresize = 4000;
 static inline int* arr = new int[100000];
 static inline int search = distr2(eng);
+static inline size_t measures = 50;
+#include <thread>
 int main() {
-
-	std::cout << " test " << std::endl;
-
-	for (int i = 0; i <= 100000; i++) {
-		arr[i] = std::rand() ;
-	}
-	//arr[3000] = 42;
-
-	std::cout << "took: " << measure([]() {std::cout << "elem: " << *kevDev::vector_algorithms::binarySearch<int, int>(arr[search], arr, 100000) << std::endl; }) << std::endl;
-	search = distr2(eng);
-	std::cout << "took: " << measure([]() {std::cout << *kevDev::vector_algorithms::linearSearch<int, int>(arr[search], arr, 100000) << std::endl; }) << std::endl;
-
-	std::cout <<"measuresize: "<< measuresize << std::endl;
 	/*
 	{
 		int n1 = 0, n2 = 21;
@@ -137,11 +127,11 @@ int main() {
 		v2.push_back(ptr1);v2.push_back(ptr2);
 	}
 	*/
-	size_t time = 0;
-	size_t measures = 50;
-
-	for(size_t i = 0; i  < measures; i++){
-		time+=measure([]() {
+	/**/
+	std::thread t{ []() {
+		size_t ttime = 0;
+	for (size_t i = 0; i < measures; i++) {
+		ttime += measure([]() {
 		vector<int, setting> vec(measuresize);
 		for (int i = 0; i < measuresize; i++) {
 			vec.push_back(std::rand());
@@ -150,11 +140,14 @@ int main() {
 			}
 		}});
 	}
-	std::cout <<  " own vector: " << time/measures << std::endl;
-	time = 0;
-	
-	for(size_t i = 0; i  < measures; i++){
-	time += measure([](){
+	std::cout << " own vector: " << ttime / measures << std::endl;
+	ttime = 0;
+	} };
+
+	std::thread t2{ []() {
+		size_t ttime = 0;
+	for (size_t i = 0; i < measures; i++) {
+	ttime += measure([]() {
 		std::vector<int> vec{};
 		vec.reserve(measuresize);
 		for (int i = 0; i < measuresize; i++) {
@@ -165,23 +158,30 @@ int main() {
 		}
 	});
 	}
-
-std::cout << "std vector: " << time/measures << std::endl;
-time = 0;
-	for(size_t i = 0; i  < measures; i++){
-	time += measure([]() {
-		int* arr = new int[measuresize];
-		for (int i = 0; i < measuresize; i++) {
-			arr[i] = std::rand();
-			for (int j = 0; j < measuresize; j++) {
-				arr[j] = std::rand();
+std::cout << "std vector: " << ttime / measures << std::endl;
+ttime = 0;
+}
+	};
+		std::thread t3{ []() {
+			size_t ttime = 0;
+		for (size_t i = 0; i < measures; i++) {
+		ttime += measure([]() {
+			int* arr = new int[measuresize];
+			for (int i = 0; i < measuresize; i++) {
+				arr[i] = std::rand();
+				for (int j = 0; j < measuresize; j++) {
+					arr[j] = std::rand();
+				}
 			}
-		}
-		delete[] arr;
-	});
+			delete[] arr;
+		});
 
-	}
-std::cout << "raw array: " << time/measures << std::endl;
+		}
+	std::cout << "raw array: " << ttime / measures << std::endl;
+	} };
+		t.join();
+		t2.join();
+		t3.join();
 	#if (defined(_MSVC_LANG) && defined(_DEBUG))
 	_CrtDumpMemoryLeaks();
 	#endif

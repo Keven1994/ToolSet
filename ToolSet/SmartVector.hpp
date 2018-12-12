@@ -56,8 +56,8 @@ namespace kevDev {
 		using const_reference = const T&;
 		using size_type = typename Setting::size_c;
 		using difference_type = typename std::vector<T>::difference_type;
-		using iterator = typename T*;
-		using const_iterator = typename const T*;
+		using iterator = T*;
+		using const_iterator = const T*;
 		using reverse_iterator =  typename std::reverse_iterator<iterator>;
 		using const_reverse_iterator = typename std::reverse_iterator<const_iterator>;
 
@@ -77,8 +77,6 @@ namespace kevDev {
 
 		T* mdata = nullptr;
 		size_c mcapacity = 0,msize = 0;
-		using iterator = T * ;
-		using const_iterator = const T*;
 
 		vector(size_c startCapacity, size_c size) : mcapacity(startCapacity), msize(size) {
 			if(startCapacity > 0)
